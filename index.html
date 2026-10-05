@@ -49,7 +49,7 @@ const GAMES=["Catan","Can't Stop","Flip 7"],MED={gold:["🥇",3],silver:["🥈",
 const TY={Normal:["⭐","bg-stone-200"],Fire:["🔥","bg-red-200"],Water:["💧","bg-blue-200"],Electric:["⚡","bg-yellow-200"],Grass:["🌿","bg-green-200"],Ice:["❄️","bg-cyan-200"],Fighting:["🥊","bg-orange-200"],Poison:["☠️","bg-fuchsia-200"],Ground:["⛰️","bg-amber-200"],Flying:["🕊️","bg-sky-200"],Psychic:["🔮","bg-pink-200"],Bug:["🐛","bg-lime-200"],Rock:["🪨","bg-stone-300"],Ghost:["👻","bg-purple-200"],Dragon:["🐉","bg-indigo-200"],Dark:["🌑","bg-slate-300"],Steel:["⚙️","bg-zinc-300"],Fairy:["🧚","bg-rose-200"]};
 let lang=(navigator.language||"en").slice(0,2);if(!L[lang])lang="en";
 const t=k=>L[lang][k]||k,esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let items=JSON.parse(document.getElementById("state").textContent),can=false,q="",gf="all",sel=null,selP=null,store=null;
+let items=JSON.parse(document.getElementById("state").textContent),can=false,q="",gf="all",sel=null,selP=null,dexOpenFor=null,store=null;
 const pic=(p,s)=>{const ty=TY[p.type]||TY.Normal;return p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" class="${s} object-contain drop-shadow-md">`:`<div class="${s} rounded-full ${ty[1]} flex items-center justify-center text-4xl">${ty[0]}</div>`};
 const flag=c=>c?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt())):"";
 const cname=c=>{try{return new Intl.DisplayNames([lang],{type:"region"}).of(c)}catch(e){return c}};
@@ -130,14 +130,19 @@ function delP(id){if(!arm("p"+id))return;closeM();items=items.filter(x=>x.id!==i
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const plb=n=>`<button data-n="${esc(n)}" onclick="openPl(this.dataset.n)" class="hover:underline text-left">${esc(n)}</button>`;
 function rerender(){if(sel!==null)openM(sel,true);else if(selP!==null)openPl(selP)}
+function togDex(n){dexOpenFor=dexOpenFor===n?null:n;openPl(n)}
 function openPl(n){const rows=[];items.forEach(p=>p.catches.forEach((c,i)=>{if(c.player===n)rows.push({p,c,i})}));
 if(!rows.length){closeM();return}sel=null;selP=n;
 const nt=natOf(n),tn=[...new Set(rows.map(r=>r.c.torneo).filter(Boolean))],mc=m=>rows.filter(r=>r.c.medal===m).length,pts=rows.reduce((a,r)=>a+MED[r.c.medal][1]*(r.c.mult||1),0);
 rows.sort((a,b)=>(b.c.date||"").localeCompare(a.c.date||""));
 const fd=d=>d?new Date(d+"T00:00:00").toLocaleDateString(lang):"—",box=(l,v)=>`<div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><p class="text-xs text-slate-500 dark:text-slate-400">${l}</p><p class="text-xl font-black">${v}</p></div>`;
+const gold={};rows.forEach(r=>{if(r.c.medal==="gold")(gold[r.p.id]=gold[r.p.id]||{p:r.p,n:0}).n++});
+const dl=Object.values(gold).sort((a,b)=>a.p.id-b.p.id),dopen=dexOpenFor===n;
+const dexBlock=`<div><button data-n="${esc(n)}" onclick="togDex(this.dataset.n)" class="flex items-center gap-2 font-bold hover:underline"><span>📖 POKEDEX</span><span class="text-red-600 dark:text-red-400">${dl.length}/151</span><span class="text-xs">${dopen?"▲":"▼"}</span></button>${dopen?(dl.length?`<ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">${dl.map(x=>{const ty=TY[x.p.type]||TY.Normal;return `<li class="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-2"><span class="w-10 h-10 flex items-center justify-center shrink-0">${x.p.img?`<img src="${esc(x.p.img)}" alt="" class="w-10 h-10 object-contain">`:`<span class="fl text-2xl">${ty[0]}</span>`}</span><span class="text-xs font-bold text-slate-400">#${String(x.p.id).padStart(3,"0")}</span><button onclick="openM(${x.p.id})" class="flex-1 text-left text-sm font-semibold hover:underline">${esc(x.p.name)}</button><span class="text-xs font-extrabold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">×${x.n}</span></li>`}).join("")}</ul>`:`<p class="text-xs text-slate-400 mt-2">—</p>`):""}</div>`;
 mbox.innerHTML=`<div class="flex items-center gap-4"><div class="fl text-5xl">${flag(nt)||"👤"}</div><div class="flex-1"><h2 class="text-2xl font-extrabold">${esc(n)}</h2><p class="text-sm text-slate-500 dark:text-slate-400">${nt?esc(cname(nt)):t("nonat2")}</p></div><button onclick="closeM()" class="self-start px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700">✕</button></div>
 <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">${box(t("tplayed"),tn.length||"—")}${box(t("ncatch"),rows.length)}${box(t("pokes"),new Set(rows.filter(r=>r.c.medal==="gold").map(r=>r.p.id)).size+"/151")}${box(t("pts"),pts)}${box(t("summary"),"🥇"+mc("gold")+" 🥈"+mc("silver")+" 🥉"+mc("bronze"))}</div>
 ${tn.length?`<p class="text-xs text-slate-500 dark:text-slate-400">🏟️ ${tn.map(esc).join(" · ")}</p>`:""}
+${dexBlock}
 <div><h4 class="font-bold mb-2">${t("pregistry")}</h4><div class="overflow-x-auto"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-200 dark:border-slate-600"><th class="py-1 px-2">Pokémon</th><th class="px-2">${t("game")}</th><th class="px-2">${t("medal")}</th><th class="px-2">${t("torneo")}</th><th class="px-2">${t("date")}</th>${can?"<th></th>":""}</tr></thead><tbody>`+rows.map(r=>{const ty=TY[r.p.type]||TY.Normal;return `<tr class="border-b border-slate-100 dark:border-slate-700"><td class="py-1.5 px-2"><button onclick="openM(${r.p.id})" class="flex items-center gap-2 font-semibold hover:underline">${r.p.img?`<img src="${esc(r.p.img)}" class="w-8 h-8 object-contain">`:`<span class="fl text-xl">${ty[0]}</span>`}${esc(r.p.name)}</button></td><td class="px-2">${esc(r.c.game)}</td><td class="px-2">${MED[r.c.medal][0]}${r.c.mult>1?" ×"+r.c.mult:""}</td><td class="px-2">${r.c.torneo?esc(r.c.torneo):"—"}</td><td class="px-2 whitespace-nowrap">${fd(r.c.date)}</td>${can?`<td class="px-2"><button onclick="delC(${r.p.id},${r.i})" class="text-red-600 hover:underline">${armed==="c"+r.p.id+"_"+r.i?t("conf"):t("del")}</button></td>`:""}</tr>`}).join("")+`</tbody></table></div></div>`;
 modal.classList.remove("hidden");modal.classList.add("flex")}
 function openM(id,keep){const p=items.find(x=>x.id===id);if(!p){closeM();return}sel=id;selP=null;const ty=TY[p.type]||TY.Normal;
@@ -155,7 +160,7 @@ mbox.innerHTML=`<div class="flex items-center gap-4">${pic(p,"w-24 h-24 shrink-0
 ${hist?`<div><h4 class="font-bold mb-1">${t("apar")}${gs()}</h4>${gf==="all"?`<p class="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400 mb-1">${GAMES.map(g=>`<span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full ${GC[g]}"></span>${g}</span>`).join("")}</p>`:""}<ul>${hist}</ul></div>`:""}
 ${can?`<button onclick="delP(${p.id})" class="text-sm text-red-600 hover:underline">${armed==="p"+p.id?t("conf"):t("delp")}</button>`:""}`;
 modal.classList.remove("hidden");modal.classList.add("flex")}
-function closeM(){sel=null;selP=null;modal.classList.add("hidden");modal.classList.remove("flex")}
+function closeM(){sel=null;selP=null;dexOpenFor=null;modal.classList.add("hidden");modal.classList.remove("flex")}
 i18n();draw();
 
 </script>
