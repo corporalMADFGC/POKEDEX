@@ -16,8 +16,9 @@
 <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
 <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
 <div><select id="gf" onchange="gf=this.value;draw()" class="w-full bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white font-extrabold text-lg rounded-2xl py-3 px-4 shadow-sm transition cursor-pointer text-center [text-align-last:center] [&amp;&gt;option]:text-slate-900 [&amp;&gt;option]:bg-white"></select></div>
-<div class="flex gap-3"><button id="tabpl" onclick="togTab('pl')"></button><button id="tabco" onclick="togTab('co')"></button></div>
+<button id="tabpl" onclick="togTab('pl')" class="w-full flex items-center justify-center gap-3 text-white font-extrabold text-lg rounded-2xl py-3 shadow-sm transition bg-violet-600 hover:bg-violet-700"></button>
 <div id="secpl" class="grid grid-cols-1 lg:grid-cols-2 gap-4"><div id="ranking" class="h-full"></div><div id="dexrank" class="h-full"></div></div>
+<button id="tabco" onclick="togTab('co')" class="w-full flex items-center justify-center gap-3 text-white font-extrabold text-lg rounded-2xl py-3 shadow-sm transition bg-amber-600 hover:bg-amber-700"></button>
 <div id="secco" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4"><div id="countries" class="h-full"></div><div id="dexcountry" class="h-full"></div></div>
 <button id="btnpk" onclick="togSec('pk')" class="w-full flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-lg rounded-2xl py-3 shadow-sm transition"></button>
 <div id="pksec" class="hidden space-y-3"><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700"><input id="q" oninput="onSearch(this.value)" data-ph="search" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm"></div>
@@ -54,7 +55,7 @@ const GAMES=["Catan","Can't Stop","Flip 7"],MED={gold:["🥇",3],silver:["🥈",
 const TY={Normal:["⭐","bg-stone-200"],Fire:["🔥","bg-red-200"],Water:["💧","bg-blue-200"],Electric:["⚡","bg-yellow-200"],Grass:["🌿","bg-green-200"],Ice:["❄️","bg-cyan-200"],Fighting:["🥊","bg-orange-200"],Poison:["☠️","bg-fuchsia-200"],Ground:["⛰️","bg-amber-200"],Flying:["🕊️","bg-sky-200"],Psychic:["🔮","bg-pink-200"],Bug:["🐛","bg-lime-200"],Rock:["🪨","bg-stone-300"],Ghost:["👻","bg-purple-200"],Dragon:["🐉","bg-indigo-200"],Dark:["🌑","bg-slate-300"],Steel:["⚙️","bg-zinc-300"],Fairy:["🧚","bg-rose-200"]};
 let lang="en";
 const t=k=>L[lang][k]||k,esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let items=JSON.parse(document.getElementById("state").textContent),can=false,q="",gf="all",sel=null,selP=null,selC=null,selMed=null,selDex=null,selCD=null,cdexSel=null,plSec=null,dexOpenFor=null,renaming=null,showPk=false,showCal=false,calY=null,calM=0,calSel=null,tabSec="pl",store=null;
+let items=JSON.parse(document.getElementById("state").textContent),can=false,q="",gf="all",sel=null,selP=null,selC=null,selMed=null,selDex=null,selCD=null,cdexSel=null,plSec=null,dexOpenFor=null,renaming=null,showPk=false,showCal=false,calY=null,calM=0,calSel=null,showPl=true,showCo=false,store=null;
 const pic=(p,s)=>{const ty=TY[p.type]||TY.Normal;return p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" class="${s} object-contain drop-shadow-md">`:`<div class="${s} rounded-full ${ty[1]} flex items-center justify-center text-4xl">${ty[0]}</div>`};
 const flag=c=>c?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt())):"";
 const cname=c=>{try{return new Intl.DisplayNames([lang],{type:"region"}).of(c)}catch(e){return c}};
@@ -90,13 +91,10 @@ try{const r=await fetch("https://"+GC_CODE+".goatcounter.com/counter/"+encodeURI
 function fitAll(){document.querySelectorAll(".sc").forEach(w=>{w.style.maxHeight="";const r=w.querySelector("tbody tr"),h=w.querySelector("thead");if(r&&h&&r.offsetHeight)w.style.maxHeight=(h.offsetHeight+r.offsetHeight*20+2)+"px"});
 const g=document.getElementById("grid"),c=g.children;g.style.maxHeight="";if(showPk&&c.length>40){const a=c[0],z=c[39];g.style.maxHeight=(z.offsetTop+z.offsetHeight-a.offsetTop+8)+"px"}}
 window.addEventListener("resize",fitAll);window.addEventListener("load",fitAll);
-function togTab(k){tabSec=tabSec===k?null:k;applyTab()}
-function applyTab(){const p=tabSec==="pl",o=tabSec==="co",c="flex-1 flex items-center justify-center gap-2 text-white font-extrabold text-sm sm:text-lg rounded-2xl py-3 px-2 shadow-sm transition text-center ";
-document.getElementById("secpl").classList.toggle("hidden",!p);document.getElementById("secco").classList.toggle("hidden",!o);
-const a=document.getElementById("tabpl"),b=document.getElementById("tabco");
-a.innerHTML=`<span>👤 ${t("tabpl")}</span><span class="text-sm">${p?"▲":"▼"}</span>`;b.innerHTML=`<span>🌍 ${t("tabco")}</span><span class="text-sm">${o?"▲":"▼"}</span>`;
-a.className=c+"bg-violet-600 hover:bg-violet-700"+(p?" ring-4 ring-violet-300 dark:ring-violet-800":(o?" opacity-60":""));
-b.className=c+"bg-amber-600 hover:bg-amber-700"+(o?" ring-4 ring-amber-300 dark:ring-amber-800":(p?" opacity-60":""));
+function togTab(k){if(k==="pl")showPl=!showPl;else showCo=!showCo;applyTab()}
+function applyTab(){document.getElementById("secpl").classList.toggle("hidden",!showPl);document.getElementById("secco").classList.toggle("hidden",!showCo);
+document.getElementById("tabpl").innerHTML=`<span>👤 ${t("tabpl")}</span><span class="text-sm opacity-80">${showPl?"▲":"▼"}</span>`;
+document.getElementById("tabco").innerHTML=`<span>🌍 ${t("tabco")}</span><span class="text-sm opacity-80">${showCo?"▲":"▼"}</span>`;
 setTimeout(fitAll,0)}
 function dexCountryTable(){const s={};
 items.forEach(p=>cs(p).forEach(c=>{const n=natOf(c.player);if(!n)return;const x=s[n]=s[n]||{n,d:new Set()};if(c.medal==="gold")x.d.add(p.id)}));
